@@ -1648,22 +1648,37 @@
             });
             
             // Login Form Submission
-            loginForm.addEventListener('submit', e => {
+            loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const email = emailInput.value;
                 const password = passwordInput.value;
                 
+                if (!email || !password) {
+                    showNotification('error', 'Email dan password harus diisi');
+                    return;
+                }
+
                 showLoading();
                 
-                auth.signInWithEmailAndPassword(email, password)
-                    .then(userCredential => {
-                        hideLoading();
-                        showNotification('success', 'Login berhasil!');
-                    })
-                    .catch(error => {
-                        hideLoading();
+                try {
+                    // Coba login
+                    await auth.signInWithEmailAndPassword(email, password);
+                    showNotification('success', 'Login berhasil!');
+                } catch (error) {
+                    // Jika login gagal, coba daftarkan user baru
+                    if (error.code === 'auth/user-not-found') {
+                        try {
+                            await auth.createUserWithEmailAndPassword(email, password);
+                            showNotification('success', 'Akun baru berhasil dibuat!');
+                        } catch (signupError) {
+                            showNotification('error', 'Pendaftaran gagal: ' + signupError.message);
+                        }
+                    } else {
                         showNotification('error', 'Login gagal: ' + error.message);
-                    });
+                    }
+                } finally {
+                    hideLoading();
+                }
             });
             
             // Logout
@@ -1846,7 +1861,7 @@
             // Fungsi untuk membuat animasi bintang
             function initStars() {
                 const starsContainer = document.getElementById('stars');
-                const starCount = 200;
+                const starCount = 500; // Diperbanyak dari 200 menjadi 500
                 
                 for (let i = 0; i < starCount; i++) {
                     const star = document.createElement('div');
@@ -1857,11 +1872,11 @@
                     const y = Math.random() * 100;
                     
                     // Random size
-                    const size = Math.random() * 2;
+                    const size = Math.random() * 3; // Diperbesar dari 2 menjadi 3
                     
                     // Random opacity and duration
                     const opacity = Math.random();
-                    const duration = 2 + Math.random() * 3;
+                    const duration = 1 + Math.random() * 4; // Dipercepat animasinya
                     
                     star.style.left = `${x}%`;
                     star.style.top = `${y}%`;
@@ -1880,7 +1895,7 @@
             // Fungsi untuk membuat animasi meteor
             function initMeteors() {
                 const starsContainer = document.getElementById('stars');
-                const meteorCount = 10;
+                const meteorCount = 20; // Diperbanyak dari 10 menjadi 20
                 
                 for (let i = 0; i < meteorCount; i++) {
                     const meteor = document.createElement('div');
@@ -1888,15 +1903,15 @@
                     
                     // Random start position (near top edge)
                     const x = Math.random() * 100;
-                    const y = Math.random() * 10;
+                    const y = Math.random() * 20; // Diperluas area munculnya
                     
                     // Random translation (diagonal down)
-                    const translateX = 50 + Math.random() * 100;
-                    const translateY = 50 + Math.random() * 100;
+                    const translateX = 100 + Math.random() * 200; // Diperpanjang lintasannya
+                    const translateY = 100 + Math.random() * 200; // Diperpanjang lintasannya
                     
                     // Random duration and delay
-                    const duration = 0.5 + Math.random() * 1;
-                    const delay = Math.random() * 15;
+                    const duration = 0.3 + Math.random() * 0.7; // Dipercepat animasinya
+                    const delay = Math.random() * 10; // Diperpendek delaynya
                     
                     meteor.style.setProperty('--top', `${y}%`);
                     meteor.style.setProperty('--left', `${x}%`);
