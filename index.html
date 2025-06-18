@@ -2059,7 +2059,8 @@
                 .filter(t => t.type === 'withdraw')
                 .reduce((sum, t) => sum + t.amount, 0);
             
-            const totalIncome = totalDeposit - totalWithdraw;
+            // Fixed income calculation to show positive value
+            const totalIncome = Math.abs(totalDeposit - totalWithdraw);
             const netBalance = totalIncome;
             const totalDepositKas = deposits.reduce((sum, d) => sum + d.amount, 0);
             
@@ -2159,7 +2160,7 @@
             // Calculate distribution
             const totalDeposit = depositData.reduce((a, b) => a + b, 0);
             const totalWithdraw = withdrawData.reduce((a, b) => a + b, 0);
-            const totalIncome = totalDeposit - totalWithdraw;
+            const totalIncome = Math.abs(totalDeposit - totalWithdraw);
             const totalDebt = debts
                 .filter(d => d.type === 'utang')
                 .reduce((sum, d) => sum + d.amount, 0);
@@ -2670,6 +2671,43 @@
             });
         }
 
+        // Generate Excel file
+        function generateExcel(data, headers, fileName) {
+            // Create CSV content
+            let csvContent = headers.join(',') + '\n';
+            
+            data.forEach(item => {
+                const row = headers.map(header => {
+                    // Handle nested properties if needed
+                    if (header.includes('.')) {
+                        const props = header.split('.');
+                        let value = item;
+                        for (const prop of props) {
+                            value = value[prop];
+                        }
+                        return `"${value}"`;
+                    }
+                    return `"${item[header]}"`;
+                });
+                csvContent += row.join(',') + '\n';
+            });
+            
+            // Create blob
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${fileName}.csv`);
+            link.style.visibility = 'hidden';
+            
+            // Add to document and trigger download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         // Switch page
         function switchPage(page) {
             // Hide all page contents
@@ -2867,18 +2905,61 @@
                 const period = document.getElementById('report-period').value;
                 const format = document.getElementById('report-format').value;
                 
-                // Simulate file download
-                const blob = new Blob([`Laporan ${type} periode ${period}`], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `laporan_${type}_${new Date().toISOString().split('T')[0]}.${format}`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                // Generate report data based on type
+                let reportData = [];
+                let headers = [];
+                let fileName = `laporan_${type}_${new Date().toISOString().split('T')[0]}`;
                 
-                showNotification('success', 'Berhasil!', `Laporan ${type} periode ${period} dalam format ${format.toUpperCase()} telah diunduh.`);
+                if (type === 'transaksi') {
+                    reportData = transactions;
+                    headers = ['date', 'userid', 'type', 'amount', 'notes'];
+                } else if (type === 'utang-piutang') {
+                    reportData = debts;
+                    headers = ['date', 'name', 'type', 'amount', 'dueDate', 'status', 'notes'];
+                } else if (type === 'setor-kas') {
+                    reportData = deposits;
+                    headers = ['date', 'accountName', 'accountNumber', 'amount', 'notes'];
+                } else if (type === 'semua') {
+                    // Combine all data
+                    reportData = [
+                        ...transactions.map(t => ({ ...t, jenis: 'transaksi' })),
+                        ...debts.map(d => ({ ...d, jenis: 'utang-piutang' })),
+                        ...deposits.map(d => ({ ...d, jenis: 'setor-kas' }))
+                    ];
+                    headers = ['jenis', 'date', 'amount', 'notes'];
+                }
+                
+                // Filter by period if needed
+                if (period === 'today') {
+                    const today = new Date().toISOString().split('T')[0];
+                    reportData = reportData.filter(item => item.date === today);
+                } else if (period === 'week') {
+                    const oneWeekAgo = new Date();
+                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                    reportData = reportData.filter(item => new Date(item.date) >= oneWeekAgo);
+                } else if (period === 'month') {
+                    const oneMonthAgo = new Date();
+                    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                    reportData = reportData.filter(item => new Date(item.date) >= oneMonthAgo);
+                } else if (period === 'custom') {
+                    const startDate = document.getElementById('custom-date-start').value;
+                    const endDate = document.getElementById('custom-date-end').value;
+                    
+                    if (startDate && endDate) {
+                        reportData = reportData.filter(item => {
+                            return item.date >= startDate && item.date <= endDate;
+                        });
+                    }
+                }
+                
+                // Generate the report based on format
+                if (format === 'excel' || format === 'csv') {
+                    generateExcel(reportData, headers, fileName);
+                    showNotification('success', 'Berhasil!', `Laporan ${type} periode ${period} dalam format ${format.toUpperCase()} telah diunduh.`);
+                } else {
+                    // For PDF, we would use a PDF generation library in a real app
+                    showNotification('info', 'Info', 'Fitur PDF belum diimplementasikan. Silakan pilih format Excel atau CSV.');
+                }
             });
             
             // Report period change
@@ -2900,27 +2981,113 @@
                 const previewContainer = document.getElementById('report-preview-container');
                 const previewTable = document.getElementById('report-preview-table');
                 
-                // Sample preview data
-                previewTable.innerHTML = `
-                    <thead>
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Keterangan</th>
-                            <th>Jenis</th>
-                            <th>Nominal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${transactions.slice(0, 3).map(transaction => `
+                // Get selected report type
+                const type = document.getElementById('report-type').value;
+                
+                if (!type) {
+                    showNotification('error', 'Error', 'Pilih jenis laporan terlebih dahulu');
+                    return;
+                }
+                
+                // Generate preview data based on type
+                let previewData = [];
+                let headers = [];
+                
+                if (type === 'transaksi') {
+                    previewData = transactions.slice(0, 5);
+                    headers = ['Tanggal', 'User ID', 'Jenis', 'Nominal', 'Catatan'];
+                    
+                    previewTable.innerHTML = `
+                        <thead>
                             <tr>
-                                <td>${transaction.date}</td>
-                                <td>${transaction.notes || (transaction.type === 'deposit' ? 'Deposit' : 'Withdraw')}</td>
-                                <td>${transaction.type === 'deposit' ? 'Deposit' : 'Withdraw'}</td>
-                                <td>${transaction.type === 'deposit' ? '+' : '-'}${formatCurrency(transaction.amount)}</td>
+                                ${headers.map(header => `<th>${header}</th>`).join('')}
                             </tr>
-                        `).join('')}
-                    </tbody>
-                `;
+                        </thead>
+                        <tbody>
+                            ${previewData.map(transaction => `
+                                <tr>
+                                    <td>${transaction.date}</td>
+                                    <td>${transaction.userid}</td>
+                                    <td>${transaction.type === 'deposit' ? 'Deposit' : 'Withdraw'}</td>
+                                    <td>${formatCurrency(transaction.amount)}</td>
+                                    <td>${transaction.notes || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    `;
+                } else if (type === 'utang-piutang') {
+                    previewData = debts.slice(0, 5);
+                    headers = ['Tanggal', 'Nama', 'Jenis', 'Nominal', 'Jatuh Tempo', 'Status', 'Keterangan'];
+                    
+                    previewTable.innerHTML = `
+                        <thead>
+                            <tr>
+                                ${headers.map(header => `<th>${header}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${previewData.map(debt => `
+                                <tr>
+                                    <td>${debt.date}</td>
+                                    <td>${debt.name}</td>
+                                    <td>${debt.type === 'utang' ? 'Utang' : 'Piutang'}</td>
+                                    <td>${formatCurrency(debt.amount)}</td>
+                                    <td>${debt.dueDate || '-'}</td>
+                                    <td>${debt.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}</td>
+                                    <td>${debt.notes || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    `;
+                } else if (type === 'setor-kas') {
+                    previewData = deposits.slice(0, 5);
+                    headers = ['Tanggal', 'Nama Rekening', 'Nomor Rekening', 'Nominal', 'Keterangan'];
+                    
+                    previewTable.innerHTML = `
+                        <thead>
+                            <tr>
+                                ${headers.map(header => `<th>${header}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${previewData.map(deposit => `
+                                <tr>
+                                    <td>${deposit.date}</td>
+                                    <td>${deposit.accountName}</td>
+                                    <td>${deposit.accountNumber}</td>
+                                    <td>${formatCurrency(deposit.amount)}</td>
+                                    <td>${deposit.notes || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    `;
+                } else if (type === 'semua') {
+                    // Combine all data
+                    previewData = [
+                        ...transactions.slice(0, 2).map(t => ({ ...t, jenis: 'Transaksi' })),
+                        ...debts.slice(0, 2).map(d => ({ ...d, jenis: 'Utang/Piutang' })),
+                        ...deposits.slice(0, 2).map(d => ({ ...d, jenis: 'Setor Kas' }))
+                    ];
+                    headers = ['Jenis', 'Tanggal', 'Nominal', 'Keterangan'];
+                    
+                    previewTable.innerHTML = `
+                        <thead>
+                            <tr>
+                                ${headers.map(header => `<th>${header}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${previewData.map(item => `
+                                <tr>
+                                    <td>${item.jenis}</td>
+                                    <td>${item.date}</td>
+                                    <td>${formatCurrency(item.amount)}</td>
+                                    <td>${item.notes || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    `;
+                }
                 
                 previewContainer.style.display = 'block';
                 showNotification('info', 'Preview', 'Preview laporan telah ditampilkan.');
@@ -3050,23 +3217,38 @@
                     
                     // Initialize dashboard
                     switchPage('dashboard');
+                    
+                    // Set auth persistence
+                    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                        .then(() => {
+                            // User will stay logged in until they explicitly logout
+                        })
+                        .catch((error) => {
+                            console.error('Error setting auth persistence:', error);
+                        });
                 } else {
                     showNotification('error', 'Login Gagal', 'Email dan password harus diisi');
                 }
             });
             
-            // Check auth state (simplified for demo)
-            // In a real app, you would use Firebase auth state observer
-            const isLoggedIn = false; // Start logged out
-            
-            if (isLoggedIn) {
-                loginContainer.style.display = 'none';
-                dashboard.style.display = 'block';
-                switchPage('dashboard');
-            } else {
-                loginContainer.style.display = 'flex';
-                dashboard.style.display = 'none';
-            }
+            // Check auth state
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    // User is signed in
+                    loginContainer.style.display = 'none';
+                    dashboard.style.display = 'block';
+                    switchPage('dashboard');
+                    
+                    // Update user info
+                    document.getElementById('user-name').textContent = user.displayName || 'Admin';
+                    document.getElementById('user-email').textContent = user.email;
+                    document.querySelector('.user-profile span').textContent = user.displayName || 'Admin';
+                } else {
+                    // User is signed out
+                    loginContainer.style.display = 'flex';
+                    dashboard.style.display = 'none';
+                }
+            });
         }
 
         // Start the app when DOM is loaded
