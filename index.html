@@ -292,14 +292,21 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
+        .page-title {
+            display: flex;
+            flex-direction: column;
+        }
+
         .page-title h2 {
             font-size: 1.5rem;
             font-weight: 600;
+            margin: 0;
         }
 
         .page-title p {
             color: #94a3b8;
             font-size: 0.875rem;
+            margin: 0;
         }
 
         .user-info {
@@ -368,6 +375,8 @@
             font-size: 0.875rem;
             transition: all 0.3s ease;
             cursor: pointer;
+            display: flex;
+            align-items: center;
         }
 
         .dropdown-item:hover {
@@ -377,6 +386,8 @@
 
         .dropdown-item i {
             margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
         }
 
         /* Dashboard Cards */
@@ -443,6 +454,11 @@
             color: var(--warning-color);
         }
 
+        .stat-icon.deposit-kas {
+            background-color: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+        }
+
         .stat-value {
             font-size: 1.75rem;
             font-weight: 700;
@@ -463,8 +479,13 @@
             color: var(--danger-color);
         }
 
+        .stat-change.neutral {
+            color: #94a3b8;
+        }
+
         .stat-change i {
             margin-right: 0.25rem;
+            font-size: 0.75rem;
         }
 
         /* Charts Section */
@@ -685,6 +706,13 @@
             cursor: pointer;
             transition: all 0.3s ease;
             border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn i {
+            margin-right: 0.5rem;
         }
 
         .btn-primary {
@@ -807,6 +835,11 @@
             color: var(--danger-color);
         }
 
+        .status-badge.info {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent-color);
+        }
+
         .action-btn {
             background: none;
             border: none;
@@ -815,14 +848,18 @@
             font-size: 1rem;
             margin-right: 0.5rem;
             transition: all 0.3s ease;
+            padding: 0.5rem;
+            border-radius: 4px;
         }
 
         .action-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
             color: var(--accent-color);
         }
 
         .action-btn.delete:hover {
             color: var(--danger-color);
+            background-color: rgba(239, 68, 68, 0.1);
         }
 
         /* Notifications */
@@ -1130,7 +1167,7 @@
                             </div>
                         </div>
                         <div class="stat-value" id="total-deposit">Rp0</div>
-                        <div class="stat-change">
+                        <div class="stat-change neutral">
                             <i class="fas fa-minus"></i>
                             <span>0% dari kemarin</span>
                         </div>
@@ -1143,7 +1180,7 @@
                             </div>
                         </div>
                         <div class="stat-value" id="total-withdraw">Rp0</div>
-                        <div class="stat-change">
+                        <div class="stat-change neutral">
                             <i class="fas fa-minus"></i>
                             <span>0% dari kemarin</span>
                         </div>
@@ -1156,7 +1193,7 @@
                             </div>
                         </div>
                         <div class="stat-value" id="total-income">Rp0</div>
-                        <div class="stat-change">
+                        <div class="stat-change neutral">
                             <i class="fas fa-minus"></i>
                             <span>0% dari kemarin</span>
                         </div>
@@ -1169,7 +1206,20 @@
                             </div>
                         </div>
                         <div class="stat-value" id="net-balance">Rp0</div>
-                        <div class="stat-change">
+                        <div class="stat-change neutral">
+                            <i class="fas fa-minus"></i>
+                            <span>0% dari kemarin</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-title">Total Setor Kas</div>
+                            <div class="stat-icon deposit-kas">
+                                <i class="fas fa-landmark"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="total-deposit-kas">Rp0</div>
+                        <div class="stat-change neutral">
                             <i class="fas fa-minus"></i>
                             <span>0% dari kemarin</span>
                         </div>
@@ -1445,10 +1495,10 @@
                                 <input type="text" id="all-transactions-search" placeholder="Cari transaksi...">
                             </div>
                             <div class="chart-period" style="margin-left: 1rem;">
-                                <button class="period-btn active">Hari Ini</button>
-                                <button class="period-btn">Minggu Ini</button>
-                                <button class="period-btn">Bulan Ini</button>
-                                <button class="period-btn">Custom</button>
+                                <button class="period-btn active" data-period="today">Hari Ini</button>
+                                <button class="period-btn" data-period="week">Minggu Ini</button>
+                                <button class="period-btn" data-period="month">Bulan Ini</button>
+                                <button class="period-btn" data-period="custom">Custom</button>
                             </div>
                         </div>
                     </div>
@@ -1487,10 +1537,10 @@
                                 <input type="text" id="all-debts-search" placeholder="Cari data...">
                             </div>
                             <div class="chart-period" style="margin-left: 1rem;">
-                                <button class="period-btn active">Semua</button>
-                                <button class="period-btn">Utang</button>
-                                <button class="period-btn">Piutang</button>
-                                <button class="period-btn">Belum Lunas</button>
+                                <button class="period-btn active" data-filter="all">Semua</button>
+                                <button class="period-btn" data-filter="utang">Utang</button>
+                                <button class="period-btn" data-filter="piutang">Piutang</button>
+                                <button class="period-btn" data-filter="unpaid">Belum Lunas</button>
                             </div>
                         </div>
                     </div>
@@ -1530,10 +1580,10 @@
                                 <input type="text" id="all-deposits-search" placeholder="Cari setoran...">
                             </div>
                             <div class="chart-period" style="margin-left: 1rem;">
-                                <button class="period-btn active">Hari Ini</button>
-                                <button class="period-btn">Minggu Ini</button>
-                                <button class="period-btn">Bulan Ini</button>
-                                <button class="period-btn">Custom</button>
+                                <button class="period-btn active" data-period="today">Hari Ini</button>
+                                <button class="period-btn" data-period="week">Minggu Ini</button>
+                                <button class="period-btn" data-period="month">Bulan Ini</button>
+                                <button class="period-btn" data-period="custom">Custom</button>
                             </div>
                         </div>
                     </div>
@@ -1685,6 +1735,13 @@
         let debts = [];
         let deposits = [];
         let charts = {};
+        let yesterdayData = {
+            deposit: 0,
+            withdraw: 0,
+            income: 0,
+            balance: 0,
+            depositKas: 0
+        };
 
         // Create stars and meteors
         function createStars() {
@@ -1896,15 +1953,16 @@
             const distributionChart = new Chart(distributionCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Deposit', 'Withdraw', 'Pendapatan', 'Utang', 'Piutang'],
+                    labels: ['Deposit', 'Withdraw', 'Pendapatan', 'Utang', 'Piutang', 'Setor Kas'],
                     datasets: [{
-                        data: [0, 0, 0, 0, 0],
+                        data: [0, 0, 0, 0, 0, 0],
                         backgroundColor: [
                             '#10b981',
                             '#ef4444',
                             '#3b82f6',
                             '#f59e0b',
-                            '#8b5cf6'
+                            '#8b5cf6',
+                            '#06b6d4'
                         ],
                         borderColor: [
                             'rgba(255, 255, 255, 0.1)'
@@ -2003,14 +2061,73 @@
             
             const totalIncome = totalDeposit - totalWithdraw;
             const netBalance = totalIncome;
+            const totalDepositKas = deposits.reduce((sum, d) => sum + d.amount, 0);
             
+            // Calculate percentage change from yesterday
+            const depositChange = totalDeposit - yesterdayData.deposit;
+            const depositPercentage = yesterdayData.deposit > 0 ? 
+                Math.round((depositChange / yesterdayData.deposit) * 100) : 0;
+            
+            const withdrawChange = totalWithdraw - yesterdayData.withdraw;
+            const withdrawPercentage = yesterdayData.withdraw > 0 ? 
+                Math.round((withdrawChange / yesterdayData.withdraw) * 100) : 0;
+            
+            const incomeChange = totalIncome - yesterdayData.income;
+            const incomePercentage = yesterdayData.income > 0 ? 
+                Math.round((incomeChange / yesterdayData.income) * 100) : 0;
+            
+            const balanceChange = netBalance - yesterdayData.balance;
+            const balancePercentage = yesterdayData.balance > 0 ? 
+                Math.round((balanceChange / yesterdayData.balance) * 100) : 0;
+            
+            const depositKasChange = totalDepositKas - yesterdayData.depositKas;
+            const depositKasPercentage = yesterdayData.depositKas > 0 ? 
+                Math.round((depositKasChange / yesterdayData.depositKas) * 100) : 0;
+            
+            // Update DOM elements
             document.getElementById('total-deposit').textContent = formatCurrency(totalDeposit);
             document.getElementById('total-withdraw').textContent = formatCurrency(totalWithdraw);
             document.getElementById('total-income').textContent = formatCurrency(totalIncome);
             document.getElementById('net-balance').textContent = formatCurrency(netBalance);
+            document.getElementById('total-deposit-kas').textContent = formatCurrency(totalDepositKas);
+            
+            // Update change indicators
+            updateChangeIndicator('deposit', depositChange, depositPercentage);
+            updateChangeIndicator('withdraw', withdrawChange, withdrawPercentage);
+            updateChangeIndicator('income', incomeChange, incomePercentage);
+            updateChangeIndicator('balance', balanceChange, balancePercentage);
+            updateChangeIndicator('deposit-kas', depositKasChange, depositKasPercentage);
             
             // Update charts
             updateCharts();
+            
+            // Update yesterday data for next time
+            yesterdayData = {
+                deposit: totalDeposit,
+                withdraw: totalWithdraw,
+                income: totalIncome,
+                balance: netBalance,
+                depositKas: totalDepositKas
+            };
+        }
+
+        // Update change indicator for a stat
+        function updateChangeIndicator(statName, change, percentage) {
+            const element = document.querySelector(`#${statName}-change`);
+            if (!element) return;
+            
+            element.className = 'stat-change';
+            
+            if (percentage > 0) {
+                element.classList.add('positive');
+                element.innerHTML = `<i class="fas fa-arrow-up"></i><span>${Math.abs(percentage)}% dari kemarin</span>`;
+            } else if (percentage < 0) {
+                element.classList.add('negative');
+                element.innerHTML = `<i class="fas fa-arrow-down"></i><span>${Math.abs(percentage)}% dari kemarin</span>`;
+            } else {
+                element.classList.add('neutral');
+                element.innerHTML = `<i class="fas fa-minus"></i><span>0% dari kemarin</span>`;
+            }
         }
 
         // Update charts with current data
@@ -2049,6 +2166,7 @@
             const totalReceivable = debts
                 .filter(d => d.type === 'piutang')
                 .reduce((sum, d) => sum + d.amount, 0);
+            const totalDepositKas = deposits.reduce((sum, d) => sum + d.amount, 0);
             
             // Update distribution chart
             charts.distributionChart.data.datasets[0].data = [
@@ -2056,7 +2174,8 @@
                 totalWithdraw,
                 totalIncome,
                 totalDebt,
-                totalReceivable
+                totalReceivable,
+                totalDepositKas
             ];
             charts.distributionChart.update();
         }
@@ -2127,10 +2246,54 @@
                     </td>
                 </tr>
             `).join('');
+            
+            // Add event listeners to edit and delete buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const transactionId = this.getAttribute('data-id');
+                    editTransaction(transactionId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const transactionId = this.getAttribute('data-id');
+                    deleteTransaction(transactionId);
+                });
+            });
         }
 
-        // Render all transactions
-        function renderAllTransactions() {
+        // Edit transaction
+        function editTransaction(id) {
+            const transaction = transactions.find(t => t.id === id);
+            if (!transaction) return;
+            
+            // Fill the form with transaction data
+            document.getElementById('transaction-date').value = transaction.date;
+            document.getElementById('transaction-userid').value = transaction.userid;
+            document.getElementById('transaction-type').value = transaction.type;
+            document.getElementById('transaction-amount').value = transaction.amount;
+            document.getElementById('transaction-notes').value = transaction.notes || '';
+            
+            // Show notification
+            showNotification('info', 'Edit Transaksi', `Anda sedang mengedit transaksi ${transaction.type} sebesar ${formatCurrency(transaction.amount)}`);
+            
+            // Scroll to form
+            document.getElementById('transaction-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Delete transaction
+        function deleteTransaction(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                showNotification('success', 'Berhasil', 'Transaksi telah dihapus');
+                renderTodayTransactions();
+                updateDashboardStats();
+            }
+        }
+
+        // Render all transactions with period filter
+        function renderAllTransactions(period = 'today') {
             const allTransactionsTable = document.getElementById('all-transactions');
             
             if (transactions.length === 0) {
@@ -2145,10 +2308,39 @@
                 return;
             }
             
-            // Sort by date (newest first)
-            const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+            // Filter transactions based on period
+            let filteredTransactions = [...transactions];
+            const today = new Date();
             
-            allTransactionsTable.innerHTML = sortedTransactions.map(transaction => `
+            if (period === 'today') {
+                const todayStr = today.toISOString().split('T')[0];
+                filteredTransactions = filteredTransactions.filter(t => t.date === todayStr);
+            } else if (period === 'week') {
+                const oneWeekAgo = new Date(today);
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                filteredTransactions = filteredTransactions.filter(t => new Date(t.date) >= oneWeekAgo);
+            } else if (period === 'month') {
+                const oneMonthAgo = new Date(today);
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                filteredTransactions = filteredTransactions.filter(t => new Date(t.date) >= oneMonthAgo);
+            }
+            
+            // Sort by date (newest first)
+            filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (filteredTransactions.length === 0) {
+                allTransactionsTable.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                            <i class="fas fa-exchange-alt" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <p>Tidak ada transaksi pada periode ini</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            allTransactionsTable.innerHTML = filteredTransactions.map(transaction => `
                 <tr>
                     <td>${transaction.date}</td>
                     <td>${transaction.userid}</td>
@@ -2161,6 +2353,21 @@
                     </td>
                 </tr>
             `).join('');
+            
+            // Add event listeners to edit and delete buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const transactionId = this.getAttribute('data-id');
+                    editTransaction(transactionId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const transactionId = this.getAttribute('data-id');
+                    deleteTransaction(transactionId);
+                });
+            });
         }
 
         // Render debt list
@@ -2193,10 +2400,55 @@
                     </td>
                 </tr>
             `).join('');
+            
+            // Add event listeners to edit and delete buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const debtId = this.getAttribute('data-id');
+                    editDebt(debtId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const debtId = this.getAttribute('data-id');
+                    deleteDebt(debtId);
+                });
+            });
         }
 
-        // Render all debts
-        function renderAllDebts() {
+        // Edit debt
+        function editDebt(id) {
+            const debt = debts.find(d => d.id === id);
+            if (!debt) return;
+            
+            // Fill the form with debt data
+            document.getElementById('debt-date').value = debt.date;
+            document.getElementById('debt-name').value = debt.name;
+            document.getElementById('debt-type').value = debt.type;
+            document.getElementById('debt-amount').value = debt.amount;
+            document.getElementById('debt-due-date').value = debt.dueDate || '';
+            document.getElementById('debt-notes').value = debt.notes || '';
+            
+            // Show notification
+            showNotification('info', 'Edit Data', `Anda sedang mengedit data ${debt.type} kepada ${debt.name}`);
+            
+            // Scroll to form
+            document.getElementById('debt-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Delete debt
+        function deleteDebt(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+                debts = debts.filter(d => d.id !== id);
+                showNotification('success', 'Berhasil', 'Data telah dihapus');
+                renderDebtList();
+                updateDashboardStats();
+            }
+        }
+
+        // Render all debts with filter
+        function renderAllDebts(filter = 'all') {
             const allDebtsTable = document.getElementById('all-debts');
             
             if (debts.length === 0) {
@@ -2211,7 +2463,30 @@
                 return;
             }
             
-            allDebtsTable.innerHTML = debts.map(debt => `
+            // Filter debts
+            let filteredDebts = [...debts];
+            
+            if (filter === 'utang') {
+                filteredDebts = filteredDebts.filter(d => d.type === 'utang');
+            } else if (filter === 'piutang') {
+                filteredDebts = filteredDebts.filter(d => d.type === 'piutang');
+            } else if (filter === 'unpaid') {
+                filteredDebts = filteredDebts.filter(d => d.status !== 'lunas');
+            }
+            
+            if (filteredDebts.length === 0) {
+                allDebtsTable.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                            <i class="fas fa-file-invoice-dollar" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <p>Tidak ada data dengan filter ini</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            allDebtsTable.innerHTML = filteredDebts.map(debt => `
                 <tr>
                     <td>${debt.date}</td>
                     <td>${debt.name}</td>
@@ -2225,6 +2500,21 @@
                     </td>
                 </tr>
             `).join('');
+            
+            // Add event listeners to edit and delete buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const debtId = this.getAttribute('data-id');
+                    editDebt(debtId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const debtId = this.getAttribute('data-id');
+                    deleteDebt(debtId);
+                });
+            });
         }
 
         // Render deposit list
@@ -2256,10 +2546,54 @@
                     </td>
                 </tr>
             `).join('');
+            
+            // Add event listeners to edit and delete buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const depositId = this.getAttribute('data-id');
+                    editDeposit(depositId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const depositId = this.getAttribute('data-id');
+                    deleteDeposit(depositId);
+                });
+            });
         }
 
-        // Render all deposits
-        function renderAllDeposits() {
+        // Edit deposit
+        function editDeposit(id) {
+            const deposit = deposits.find(d => d.id === id);
+            if (!deposit) return;
+            
+            // Fill the form with deposit data
+            document.getElementById('deposit-date').value = deposit.date;
+            document.getElementById('deposit-account-name').value = deposit.accountName;
+            document.getElementById('deposit-account-number').value = deposit.accountNumber;
+            document.getElementById('deposit-amount').value = deposit.amount;
+            document.getElementById('deposit-notes').value = deposit.notes || '';
+            
+            // Show notification
+            showNotification('info', 'Edit Setoran', `Anda sedang mengedit setoran ke ${deposit.accountName}`);
+            
+            // Scroll to form
+            document.getElementById('deposit-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Delete deposit
+        function deleteDeposit(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus setoran ini?')) {
+                deposits = deposits.filter(d => d.id !== id);
+                showNotification('success', 'Berhasil', 'Setoran telah dihapus');
+                renderDepositList();
+                updateDashboardStats();
+            }
+        }
+
+        // Render all deposits with period filter
+        function renderAllDeposits(period = 'today') {
             const allDepositsTable = document.getElementById('all-deposits');
             
             if (deposits.length === 0) {
@@ -2274,7 +2608,39 @@
                 return;
             }
             
-            allDepositsTable.innerHTML = deposits.map(deposit => `
+            // Filter deposits based on period
+            let filteredDeposits = [...deposits];
+            const today = new Date();
+            
+            if (period === 'today') {
+                const todayStr = today.toISOString().split('T')[0];
+                filteredDeposits = filteredDeposits.filter(d => d.date === todayStr);
+            } else if (period === 'week') {
+                const oneWeekAgo = new Date(today);
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                filteredDeposits = filteredDeposits.filter(d => new Date(d.date) >= oneWeekAgo);
+            } else if (period === 'month') {
+                const oneMonthAgo = new Date(today);
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                filteredDeposits = filteredDeposits.filter(d => new Date(d.date) >= oneMonthAgo);
+            }
+            
+            // Sort by date (newest first)
+            filteredDeposits.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (filteredDeposits.length === 0) {
+                allDepositsTable.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                            <i class="fas fa-landmark" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <p>Tidak ada setoran pada periode ini</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            allDepositsTable.innerHTML = filteredDeposits.map(deposit => `
                 <tr>
                     <td>${deposit.date}</td>
                     <td>${deposit.accountName}</td>
@@ -2287,6 +2653,21 @@
                     </td>
                 </tr>
             `).join('');
+            
+            // Add event listeners to edit and delete buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const depositId = this.getAttribute('data-id');
+                    editDeposit(depositId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const depositId = this.getAttribute('data-id');
+                    deleteDeposit(depositId);
+                });
+            });
         }
 
         // Switch page
@@ -2387,6 +2768,9 @@
                 // Reset form
                 this.reset();
                 
+                // Set default date to today
+                document.getElementById('transaction-date').value = new Date().toISOString().split('T')[0];
+                
                 // Update UI
                 renderTodayTransactions();
                 updateDashboardStats();
@@ -2427,6 +2811,9 @@
                 // Reset form
                 this.reset();
                 
+                // Set default date to today
+                document.getElementById('debt-date').value = new Date().toISOString().split('T')[0];
+                
                 // Update UI
                 renderDebtList();
                 updateDashboardStats();
@@ -2464,8 +2851,12 @@
                 // Reset form
                 this.reset();
                 
+                // Set default date to today
+                document.getElementById('deposit-date').value = new Date().toISOString().split('T')[0];
+                
                 // Update UI
                 renderDepositList();
+                updateDashboardStats();
             });
             
             // Report form
@@ -2476,12 +2867,18 @@
                 const period = document.getElementById('report-period').value;
                 const format = document.getElementById('report-format').value;
                 
-                showNotification('success', 'Berhasil!', `Laporan ${type} periode ${period} dalam format ${format.toUpperCase()} sedang diproses.`);
+                // Simulate file download
+                const blob = new Blob([`Laporan ${type} periode ${period}`], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `laporan_${type}_${new Date().toISOString().split('T')[0]}.${format}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
                 
-                // Simulate report generation
-                setTimeout(() => {
-                    showNotification('info', 'Laporan Siap', `Laporan Anda telah siap untuk diunduh.`);
-                }, 2000);
+                showNotification('success', 'Berhasil!', `Laporan ${type} periode ${period} dalam format ${format.toUpperCase()} telah diunduh.`);
             });
             
             // Report period change
@@ -2527,6 +2924,54 @@
                 
                 previewContainer.style.display = 'block';
                 showNotification('info', 'Preview', 'Preview laporan telah ditampilkan.');
+            });
+            
+            // Period buttons in history transactions
+            document.querySelectorAll('#history-transaksi-content .period-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    document.querySelectorAll('#history-transaksi-content .period-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Render transactions with selected period
+                    renderAllTransactions(this.getAttribute('data-period'));
+                });
+            });
+            
+            // Filter buttons in history debts
+            document.querySelectorAll('#history-utang-piutang-content .period-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    document.querySelectorAll('#history-utang-piutang-content .period-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Render debts with selected filter
+                    renderAllDebts(this.getAttribute('data-filter'));
+                });
+            });
+            
+            // Period buttons in history deposits
+            document.querySelectorAll('#history-setor-kas-content .period-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    document.querySelectorAll('#history-setor-kas-content .period-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Render deposits with selected period
+                    renderAllDeposits(this.getAttribute('data-period'));
+                });
             });
             
             // Set default dates for forms
