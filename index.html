@@ -454,9 +454,14 @@
             color: var(--warning-color);
         }
 
-        .stat-icon.deposit-kas {
+        .stat-icon.receivable {
             background-color: rgba(139, 92, 246, 0.1);
             color: #8b5cf6;
+        }
+
+        .stat-icon.deposit-kas {
+            background-color: rgba(6, 182, 212, 0.1);
+            color: var(--info-color);
         }
 
         .stat-value {
@@ -736,6 +741,16 @@
             background-color: rgba(255, 255, 255, 0.2);
         }
 
+        .btn-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+            margin-right: 1rem;
+        }
+
+        .btn-danger:hover {
+            background-color: rgba(239, 68, 68, 0.2);
+        }
+
         /* Table Styles */
         .table-container {
             background-color: var(--secondary-color);
@@ -860,6 +875,62 @@
         .action-btn.delete:hover {
             color: var(--danger-color);
             background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Edit Form Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background-color: var(--secondary-color);
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-modal:hover {
+            color: var(--danger-color);
         }
 
         /* Notifications */
@@ -1200,8 +1271,34 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-header">
-                            <div class="stat-title">Saldo Bersih</div>
+                            <div class="stat-title">Total Utang</div>
                             <div class="stat-icon debt">
+                                <i class="fas fa-hand-holding-usd"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="total-debt">Rp0</div>
+                        <div class="stat-change neutral">
+                            <i class="fas fa-minus"></i>
+                            <span>0% dari kemarin</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-title">Total Piutang</div>
+                            <div class="stat-icon receivable">
+                                <i class="fas fa-hand-holding-usd"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="total-receivable">Rp0</div>
+                        <div class="stat-change neutral">
+                            <i class="fas fa-minus"></i>
+                            <span>0% dari kemarin</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-title">Saldo Bersih</div>
+                            <div class="stat-icon income">
                                 <i class="fas fa-wallet"></i>
                             </div>
                         </div>
@@ -1687,6 +1784,19 @@
         </div>
     </div>
 
+    <!-- Edit Modal -->
+    <div class="modal" id="edit-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="edit-modal-title">Edit Data</h3>
+                <button class="close-modal" id="close-edit-modal">&times;</button>
+            </div>
+            <div id="edit-modal-content">
+                <!-- Content will be loaded here dynamically -->
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Container -->
     <div id="notification-container"></div>
 
@@ -1729,6 +1839,10 @@
         const pageSubtitle = document.getElementById('page-subtitle');
         const datetimeElement = document.getElementById('datetime');
         const starsContainer = document.getElementById('stars');
+        const editModal = document.getElementById('edit-modal');
+        const closeEditModal = document.getElementById('close-edit-modal');
+        const editModalContent = document.getElementById('edit-modal-content');
+        const editModalTitle = document.getElementById('edit-modal-title');
 
         // Data variables
         let transactions = [];
@@ -1739,9 +1853,15 @@
             deposit: 0,
             withdraw: 0,
             income: 0,
+            debt: 0,
+            receivable: 0,
             balance: 0,
             depositKas: 0
         };
+
+        // Current editing item
+        let currentEditItem = null;
+        let currentEditType = null;
 
         // Create stars and meteors
         function createStars() {
@@ -2061,7 +2181,16 @@
             
             // Fixed income calculation to show positive value
             const totalIncome = Math.abs(totalDeposit - totalWithdraw);
-            const netBalance = totalIncome;
+            
+            const totalDebt = debts
+                .filter(d => d.type === 'utang' && d.status !== 'lunas')
+                .reduce((sum, d) => sum + d.amount, 0);
+            
+            const totalReceivable = debts
+                .filter(d => d.type === 'piutang' && d.status !== 'lunas')
+                .reduce((sum, d) => sum + d.amount, 0);
+            
+            const netBalance = totalIncome + totalReceivable - totalDebt;
             const totalDepositKas = deposits.reduce((sum, d) => sum + d.amount, 0);
             
             // Calculate percentage change from yesterday
@@ -2077,6 +2206,14 @@
             const incomePercentage = yesterdayData.income > 0 ? 
                 Math.round((incomeChange / yesterdayData.income) * 100) : 0;
             
+            const debtChange = totalDebt - yesterdayData.debt;
+            const debtPercentage = yesterdayData.debt > 0 ? 
+                Math.round((debtChange / yesterdayData.debt) * 100) : 0;
+            
+            const receivableChange = totalReceivable - yesterdayData.receivable;
+            const receivablePercentage = yesterdayData.receivable > 0 ? 
+                Math.round((receivableChange / yesterdayData.receivable) * 100) : 0;
+            
             const balanceChange = netBalance - yesterdayData.balance;
             const balancePercentage = yesterdayData.balance > 0 ? 
                 Math.round((balanceChange / yesterdayData.balance) * 100) : 0;
@@ -2089,6 +2226,8 @@
             document.getElementById('total-deposit').textContent = formatCurrency(totalDeposit);
             document.getElementById('total-withdraw').textContent = formatCurrency(totalWithdraw);
             document.getElementById('total-income').textContent = formatCurrency(totalIncome);
+            document.getElementById('total-debt').textContent = formatCurrency(totalDebt);
+            document.getElementById('total-receivable').textContent = formatCurrency(totalReceivable);
             document.getElementById('net-balance').textContent = formatCurrency(netBalance);
             document.getElementById('total-deposit-kas').textContent = formatCurrency(totalDepositKas);
             
@@ -2096,6 +2235,8 @@
             updateChangeIndicator('deposit', depositChange, depositPercentage);
             updateChangeIndicator('withdraw', withdrawChange, withdrawPercentage);
             updateChangeIndicator('income', incomeChange, incomePercentage);
+            updateChangeIndicator('debt', debtChange, debtPercentage);
+            updateChangeIndicator('receivable', receivableChange, receivablePercentage);
             updateChangeIndicator('balance', balanceChange, balancePercentage);
             updateChangeIndicator('deposit-kas', depositKasChange, depositKasPercentage);
             
@@ -2107,6 +2248,8 @@
                 deposit: totalDeposit,
                 withdraw: totalWithdraw,
                 income: totalIncome,
+                debt: totalDebt,
+                receivable: totalReceivable,
                 balance: netBalance,
                 depositKas: totalDepositKas
             };
@@ -2242,8 +2385,8 @@
                     <td class="${transaction.type === 'deposit' ? 'text-success' : 'text-danger'}">${transaction.type === 'deposit' ? '+' : '-'}${formatCurrency(transaction.amount)}</td>
                     <td>${transaction.notes || '-'}</td>
                     <td>
-                        <button class="action-btn edit-btn" data-id="${transaction.id}"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn delete-btn delete-btn" data-id="${transaction.id}"><i class="fas fa-trash"></i></button>
+                        <button class="action-btn edit-btn" data-id="${transaction.id}" data-type="transaction"><i class="fas fa-edit"></i></button>
+                        <button class="action-btn delete-btn delete-btn" data-id="${transaction.id}" data-type="transaction"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -2252,45 +2395,16 @@
             document.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const transactionId = this.getAttribute('data-id');
-                    editTransaction(transactionId);
+                    editItem(transactionId, 'transaction');
                 });
             });
             
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const transactionId = this.getAttribute('data-id');
-                    deleteTransaction(transactionId);
+                    deleteItem(transactionId, 'transaction');
                 });
             });
-        }
-
-        // Edit transaction
-        function editTransaction(id) {
-            const transaction = transactions.find(t => t.id === id);
-            if (!transaction) return;
-            
-            // Fill the form with transaction data
-            document.getElementById('transaction-date').value = transaction.date;
-            document.getElementById('transaction-userid').value = transaction.userid;
-            document.getElementById('transaction-type').value = transaction.type;
-            document.getElementById('transaction-amount').value = transaction.amount;
-            document.getElementById('transaction-notes').value = transaction.notes || '';
-            
-            // Show notification
-            showNotification('info', 'Edit Transaksi', `Anda sedang mengedit transaksi ${transaction.type} sebesar ${formatCurrency(transaction.amount)}`);
-            
-            // Scroll to form
-            document.getElementById('transaction-form').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Delete transaction
-        function deleteTransaction(id) {
-            if (confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
-                transactions = transactions.filter(t => t.id !== id);
-                showNotification('success', 'Berhasil', 'Transaksi telah dihapus');
-                renderTodayTransactions();
-                updateDashboardStats();
-            }
         }
 
         // Render all transactions with period filter
@@ -2349,8 +2463,8 @@
                     <td class="${transaction.type === 'deposit' ? 'text-success' : 'text-danger'}">${transaction.type === 'deposit' ? '+' : '-'}${formatCurrency(transaction.amount)}</td>
                     <td>${transaction.notes || '-'}</td>
                     <td>
-                        <button class="action-btn edit-btn" data-id="${transaction.id}"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn delete-btn delete-btn" data-id="${transaction.id}"><i class="fas fa-trash"></i></button>
+                        <button class="action-btn edit-btn" data-id="${transaction.id}" data-type="transaction"><i class="fas fa-edit"></i></button>
+                        <button class="action-btn delete-btn delete-btn" data-id="${transaction.id}" data-type="transaction"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -2359,14 +2473,14 @@
             document.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const transactionId = this.getAttribute('data-id');
-                    editTransaction(transactionId);
+                    editItem(transactionId, 'transaction');
                 });
             });
             
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const transactionId = this.getAttribute('data-id');
-                    deleteTransaction(transactionId);
+                    deleteItem(transactionId, 'transaction');
                 });
             });
         }
@@ -2396,8 +2510,8 @@
                     <td>${debt.dueDate || '-'}</td>
                     <td><span class="status-badge ${debt.status === 'lunas' ? 'success' : 'danger'}">${debt.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}</span></td>
                     <td>
-                        <button class="action-btn edit-btn" data-id="${debt.id}"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn delete-btn" data-id="${debt.id}"><i class="fas fa-trash"></i></button>
+                        <button class="action-btn edit-btn" data-id="${debt.id}" data-type="debt"><i class="fas fa-edit"></i></button>
+                        <button class="action-btn delete-btn" data-id="${debt.id}" data-type="debt"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -2406,46 +2520,16 @@
             document.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const debtId = this.getAttribute('data-id');
-                    editDebt(debtId);
+                    editItem(debtId, 'debt');
                 });
             });
             
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const debtId = this.getAttribute('data-id');
-                    deleteDebt(debtId);
+                    deleteItem(debtId, 'debt');
                 });
             });
-        }
-
-        // Edit debt
-        function editDebt(id) {
-            const debt = debts.find(d => d.id === id);
-            if (!debt) return;
-            
-            // Fill the form with debt data
-            document.getElementById('debt-date').value = debt.date;
-            document.getElementById('debt-name').value = debt.name;
-            document.getElementById('debt-type').value = debt.type;
-            document.getElementById('debt-amount').value = debt.amount;
-            document.getElementById('debt-due-date').value = debt.dueDate || '';
-            document.getElementById('debt-notes').value = debt.notes || '';
-            
-            // Show notification
-            showNotification('info', 'Edit Data', `Anda sedang mengedit data ${debt.type} kepada ${debt.name}`);
-            
-            // Scroll to form
-            document.getElementById('debt-form').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Delete debt
-        function deleteDebt(id) {
-            if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-                debts = debts.filter(d => d.id !== id);
-                showNotification('success', 'Berhasil', 'Data telah dihapus');
-                renderDebtList();
-                updateDashboardStats();
-            }
         }
 
         // Render all debts with filter
@@ -2496,8 +2580,8 @@
                     <td>${debt.dueDate || '-'}</td>
                     <td><span class="status-badge ${debt.status === 'lunas' ? 'success' : 'danger'}">${debt.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}</span></td>
                     <td>
-                        <button class="action-btn edit-btn" data-id="${debt.id}"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn delete-btn" data-id="${debt.id}"><i class="fas fa-trash"></i></button>
+                        <button class="action-btn edit-btn" data-id="${debt.id}" data-type="debt"><i class="fas fa-edit"></i></button>
+                        <button class="action-btn delete-btn" data-id="${debt.id}" data-type="debt"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -2506,14 +2590,14 @@
             document.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const debtId = this.getAttribute('data-id');
-                    editDebt(debtId);
+                    editItem(debtId, 'debt');
                 });
             });
             
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const debtId = this.getAttribute('data-id');
-                    deleteDebt(debtId);
+                    deleteItem(debtId, 'debt');
                 });
             });
         }
@@ -2542,8 +2626,8 @@
                     <td>${formatCurrency(deposit.amount)}</td>
                     <td>${deposit.notes || '-'}</td>
                     <td>
-                        <button class="action-btn edit-btn" data-id="${deposit.id}"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn delete-btn" data-id="${deposit.id}"><i class="fas fa-trash"></i></button>
+                        <button class="action-btn edit-btn" data-id="${deposit.id}" data-type="deposit"><i class="fas fa-edit"></i></button>
+                        <button class="action-btn delete-btn" data-id="${deposit.id}" data-type="deposit"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -2552,45 +2636,16 @@
             document.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const depositId = this.getAttribute('data-id');
-                    editDeposit(depositId);
+                    editItem(depositId, 'deposit');
                 });
             });
             
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const depositId = this.getAttribute('data-id');
-                    deleteDeposit(depositId);
+                    deleteItem(depositId, 'deposit');
                 });
             });
-        }
-
-        // Edit deposit
-        function editDeposit(id) {
-            const deposit = deposits.find(d => d.id === id);
-            if (!deposit) return;
-            
-            // Fill the form with deposit data
-            document.getElementById('deposit-date').value = deposit.date;
-            document.getElementById('deposit-account-name').value = deposit.accountName;
-            document.getElementById('deposit-account-number').value = deposit.accountNumber;
-            document.getElementById('deposit-amount').value = deposit.amount;
-            document.getElementById('deposit-notes').value = deposit.notes || '';
-            
-            // Show notification
-            showNotification('info', 'Edit Setoran', `Anda sedang mengedit setoran ke ${deposit.accountName}`);
-            
-            // Scroll to form
-            document.getElementById('deposit-form').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Delete deposit
-        function deleteDeposit(id) {
-            if (confirm('Apakah Anda yakin ingin menghapus setoran ini?')) {
-                deposits = deposits.filter(d => d.id !== id);
-                showNotification('success', 'Berhasil', 'Setoran telah dihapus');
-                renderDepositList();
-                updateDashboardStats();
-            }
         }
 
         // Render all deposits with period filter
@@ -2649,8 +2704,8 @@
                     <td>${formatCurrency(deposit.amount)}</td>
                     <td>${deposit.notes || '-'}</td>
                     <td>
-                        <button class="action-btn edit-btn" data-id="${deposit.id}"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn delete-btn" data-id="${deposit.id}"><i class="fas fa-trash"></i></button>
+                        <button class="action-btn edit-btn" data-id="${deposit.id}" data-type="deposit"><i class="fas fa-edit"></i></button>
+                        <button class="action-btn delete-btn" data-id="${deposit.id}" data-type="deposit"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -2659,16 +2714,324 @@
             document.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const depositId = this.getAttribute('data-id');
-                    editDeposit(depositId);
+                    editItem(depositId, 'deposit');
                 });
             });
             
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const depositId = this.getAttribute('data-id');
-                    deleteDeposit(depositId);
+                    deleteItem(depositId, 'deposit');
                 });
             });
+        }
+
+        // Edit item (transaction, debt, or deposit)
+        function editItem(id, type) {
+            let item;
+            let formHtml;
+            
+            if (type === 'transaction') {
+                item = transactions.find(t => t.id === id);
+                if (!item) return;
+                
+                formHtml = `
+                    <form id="edit-transaction-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="edit-transaction-date">Tanggal</label>
+                                <input type="date" id="edit-transaction-date" value="${item.date}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-transaction-userid">User ID</label>
+                                <input type="text" id="edit-transaction-userid" value="${item.userid}" placeholder="Masukkan User ID" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-transaction-type">Jenis Transaksi</label>
+                                <select id="edit-transaction-type" required>
+                                    <option value="deposit" ${item.type === 'deposit' ? 'selected' : ''}>Deposit</option>
+                                    <option value="withdraw" ${item.type === 'withdraw' ? 'selected' : ''}>Withdraw</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-transaction-amount">Nominal (Rp)</label>
+                                <input type="number" id="edit-transaction-amount" value="${item.amount}" placeholder="Masukkan nominal" required>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="edit-transaction-notes">Catatan</label>
+                                <textarea id="edit-transaction-notes" rows="3" placeholder="Tambahkan catatan (opsional)">${item.notes || ''}</textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancel-edit">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                        </div>
+                    </form>
+                `;
+                
+                editModalTitle.textContent = 'Edit Transaksi';
+            } else if (type === 'debt') {
+                item = debts.find(d => d.id === id);
+                if (!item) return;
+                
+                formHtml = `
+                    <form id="edit-debt-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="edit-debt-date">Tanggal</label>
+                                <input type="date" id="edit-debt-date" value="${item.date}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-debt-name">Nama</label>
+                                <input type="text" id="edit-debt-name" value="${item.name}" placeholder="Nama orang/perusahaan" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-debt-type">Jenis</label>
+                                <select id="edit-debt-type" required>
+                                    <option value="utang" ${item.type === 'utang' ? 'selected' : ''}>Utang (Kita berutang)</option>
+                                    <option value="piutang" ${item.type === 'piutang' ? 'selected' : ''}>Piutang (Kita meminjamkan)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-debt-amount">Nominal (Rp)</label>
+                                <input type="number" id="edit-debt-amount" value="${item.amount}" placeholder="Masukkan nominal" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-debt-due-date">Jatuh Tempo</label>
+                                <input type="date" id="edit-debt-due-date" value="${item.dueDate || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-debt-status">Status</label>
+                                <select id="edit-debt-status">
+                                    <option value="belum lunas" ${item.status === 'belum lunas' ? 'selected' : ''}>Belum Lunas</option>
+                                    <option value="lunas" ${item.status === 'lunas' ? 'selected' : ''}>Lunas</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="edit-debt-notes">Keterangan</label>
+                                <textarea id="edit-debt-notes" rows="3" placeholder="Tambahkan keterangan">${item.notes || ''}</textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancel-edit">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                        </div>
+                    </form>
+                `;
+                
+                editModalTitle.textContent = 'Edit Utang/Piutang';
+            } else if (type === 'deposit') {
+                item = deposits.find(d => d.id === id);
+                if (!item) return;
+                
+                formHtml = `
+                    <form id="edit-deposit-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="edit-deposit-date">Tanggal</label>
+                                <input type="date" id="edit-deposit-date" value="${item.date}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-deposit-account-name">Nama Rekening</label>
+                                <input type="text" id="edit-deposit-account-name" value="${item.accountName}" placeholder="Nama pemilik rekening" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-deposit-account-number">Nomor Rekening</label>
+                                <input type="text" id="edit-deposit-account-number" value="${item.accountNumber}" placeholder="Nomor rekening" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-deposit-amount">Nominal (Rp)</label>
+                                <input type="number" id="edit-deposit-amount" value="${item.amount}" placeholder="Masukkan nominal" required>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="edit-deposit-notes">Keterangan</label>
+                                <textarea id="edit-deposit-notes" rows="3" placeholder="Tambahkan keterangan">${item.notes || ''}</textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancel-edit">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                        </div>
+                    </form>
+                `;
+                
+                editModalTitle.textContent = 'Edit Setoran Kas';
+            }
+            
+            editModalContent.innerHTML = formHtml;
+            currentEditItem = item;
+            currentEditType = type;
+            
+            // Show modal
+            editModal.style.display = 'block';
+            
+            // Setup form submit handler
+            if (type === 'transaction') {
+                document.getElementById('edit-transaction-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const date = document.getElementById('edit-transaction-date').value;
+                    const userid = document.getElementById('edit-transaction-userid').value;
+                    const type = document.getElementById('edit-transaction-type').value;
+                    const amount = parseInt(document.getElementById('edit-transaction-amount').value);
+                    const notes = document.getElementById('edit-transaction-notes').value;
+                    
+                    // Update transaction
+                    const updatedTransaction = {
+                        ...currentEditItem,
+                        date,
+                        userid,
+                        type,
+                        amount,
+                        notes
+                    };
+                    
+                    // Update in array
+                    transactions = transactions.map(t => t.id === currentEditItem.id ? updatedTransaction : t);
+                    
+                    // Close modal
+                    editModal.style.display = 'none';
+                    
+                    // Show success message
+                    showNotification('success', 'Berhasil!', `Transaksi ${type} telah diperbarui.`);
+                    
+                    // Update UI
+                    if (pageContents['input-transaksi'].style.display !== 'none') {
+                        renderTodayTransactions();
+                    }
+                    if (pageContents['history-transaksi'].style.display !== 'none') {
+                        renderAllTransactions();
+                    }
+                    updateDashboardStats();
+                });
+            } else if (type === 'debt') {
+                document.getElementById('edit-debt-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const date = document.getElementById('edit-debt-date').value;
+                    const name = document.getElementById('edit-debt-name').value;
+                    const type = document.getElementById('edit-debt-type').value;
+                    const amount = parseInt(document.getElementById('edit-debt-amount').value);
+                    const dueDate = document.getElementById('edit-debt-due-date').value;
+                    const status = document.getElementById('edit-debt-status').value;
+                    const notes = document.getElementById('edit-debt-notes').value;
+                    
+                    // Update debt
+                    const updatedDebt = {
+                        ...currentEditItem,
+                        date,
+                        name,
+                        type,
+                        amount,
+                        dueDate,
+                        status,
+                        notes
+                    };
+                    
+                    // Update in array
+                    debts = debts.map(d => d.id === currentEditItem.id ? updatedDebt : d);
+                    
+                    // Close modal
+                    editModal.style.display = 'none';
+                    
+                    // Show success message
+                    showNotification('success', 'Berhasil!', `Data ${type} telah diperbarui.`);
+                    
+                    // Update UI
+                    if (pageContents['input-utang-piutang'].style.display !== 'none') {
+                        renderDebtList();
+                    }
+                    if (pageContents['history-utang-piutang'].style.display !== 'none') {
+                        renderAllDebts();
+                    }
+                    updateDashboardStats();
+                });
+            } else if (type === 'deposit') {
+                document.getElementById('edit-deposit-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const date = document.getElementById('edit-deposit-date').value;
+                    const accountName = document.getElementById('edit-deposit-account-name').value;
+                    const accountNumber = document.getElementById('edit-deposit-account-number').value;
+                    const amount = parseInt(document.getElementById('edit-deposit-amount').value);
+                    const notes = document.getElementById('edit-deposit-notes').value;
+                    
+                    // Update deposit
+                    const updatedDeposit = {
+                        ...currentEditItem,
+                        date,
+                        accountName,
+                        accountNumber,
+                        amount,
+                        notes
+                    };
+                    
+                    // Update in array
+                    deposits = deposits.map(d => d.id === currentEditItem.id ? updatedDeposit : d);
+                    
+                    // Close modal
+                    editModal.style.display = 'none';
+                    
+                    // Show success message
+                    showNotification('success', 'Berhasil!', `Setoran kas telah diperbarui.`);
+                    
+                    // Update UI
+                    if (pageContents['input-setor-kas'].style.display !== 'none') {
+                        renderDepositList();
+                    }
+                    if (pageContents['history-setor-kas'].style.display !== 'none') {
+                        renderAllDeposits();
+                    }
+                    updateDashboardStats();
+                });
+            }
+            
+            // Cancel button
+            document.getElementById('cancel-edit').addEventListener('click', function() {
+                editModal.style.display = 'none';
+            });
+        }
+
+        // Delete item (transaction, debt, or deposit)
+        function deleteItem(id, type) {
+            if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+                if (type === 'transaction') {
+                    transactions = transactions.filter(t => t.id !== id);
+                    showNotification('success', 'Berhasil', 'Transaksi telah dihapus');
+                    
+                    // Update UI
+                    if (pageContents['input-transaksi'].style.display !== 'none') {
+                        renderTodayTransactions();
+                    }
+                    if (pageContents['history-transaksi'].style.display !== 'none') {
+                        renderAllTransactions();
+                    }
+                } else if (type === 'debt') {
+                    debts = debts.filter(d => d.id !== id);
+                    showNotification('success', 'Berhasil', 'Data utang/piutang telah dihapus');
+                    
+                    // Update UI
+                    if (pageContents['input-utang-piutang'].style.display !== 'none') {
+                        renderDebtList();
+                    }
+                    if (pageContents['history-utang-piutang'].style.display !== 'none') {
+                        renderAllDebts();
+                    }
+                } else if (type === 'deposit') {
+                    deposits = deposits.filter(d => d.id !== id);
+                    showNotification('success', 'Berhasil', 'Setoran kas telah dihapus');
+                    
+                    // Update UI
+                    if (pageContents['input-setor-kas'].style.display !== 'none') {
+                        renderDepositList();
+                    }
+                    if (pageContents['history-setor-kas'].style.display !== 'none') {
+                        renderAllDeposits();
+                    }
+                }
+                
+                updateDashboardStats();
+            }
         }
 
         // Generate Excel file
@@ -3172,28 +3535,23 @@
             // Logout handlers
             logoutBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                auth.signOut().then(() => {
-                    showNotification('success', 'Berhasil Logout', 'Anda telah logout dari sistem.');
-                    setTimeout(() => {
-                        loginContainer.style.display = 'flex';
-                        dashboard.style.display = 'none';
-                    }, 1000);
-                }).catch(error => {
-                    showNotification('error', 'Error', 'Gagal logout: ' + error.message);
-                });
+                auth.signOut();
             });
             
             dropdownLogout.addEventListener('click', function(e) {
                 e.preventDefault();
-                auth.signOut().then(() => {
-                    showNotification('success', 'Berhasil Logout', 'Anda telah logout dari sistem.');
-                    setTimeout(() => {
-                        loginContainer.style.display = 'flex';
-                        dashboard.style.display = 'none';
-                    }, 1000);
-                }).catch(error => {
-                    showNotification('error', 'Error', 'Gagal logout: ' + error.message);
-                });
+                auth.signOut();
+            });
+            
+            // Close edit modal when clicking outside
+            editModal.addEventListener('click', function(e) {
+                if (e.target === editModal) {
+                    editModal.style.display = 'none';
+                }
+            });
+            
+            closeEditModal.addEventListener('click', function() {
+                editModal.style.display = 'none';
             });
             
             // Login form handler
@@ -3243,6 +3601,82 @@
                     document.getElementById('user-name').textContent = user.displayName || 'Admin';
                     document.getElementById('user-email').textContent = user.email;
                     document.querySelector('.user-profile span').textContent = user.displayName || 'Admin';
+                    
+                    // Load data from Firebase (in a real app)
+                    // database.ref('transactions').on('value', (snapshot) => {
+                    //     transactions = [];
+                    //     snapshot.forEach(childSnapshot => {
+                    //         transactions.push(childSnapshot.val());
+                    //     });
+                    //     updateDashboardStats();
+                    //     renderRecentTransactions();
+                    //     renderTodayTransactions();
+                    // });
+                    
+                    // For demo, use sample data
+                    transactions = [
+                        {
+                            id: '1',
+                            date: new Date().toISOString().split('T')[0],
+                            userid: 'user123',
+                            type: 'deposit',
+                            amount: 1000000,
+                            notes: 'Deposit awal',
+                            createdAt: new Date().toISOString()
+                        },
+                        {
+                            id: '2',
+                            date: new Date().toISOString().split('T')[0],
+                            userid: 'user456',
+                            type: 'withdraw',
+                            amount: 500000,
+                            notes: 'Withdraw kebutuhan',
+                            createdAt: new Date().toISOString()
+                        }
+                    ];
+                    
+                    debts = [
+                        {
+                            id: '1',
+                            date: new Date().toISOString().split('T')[0],
+                            name: 'PT ABC',
+                            type: 'utang',
+                            amount: 2000000,
+                            dueDate: '2025-07-01',
+                            notes: 'Utang bahan baku',
+                            status: 'belum lunas',
+                            createdAt: new Date().toISOString()
+                        },
+                        {
+                            id: '2',
+                            date: new Date().toISOString().split('T')[0],
+                            name: 'Budi',
+                            type: 'piutang',
+                            amount: 1500000,
+                            dueDate: '2025-06-25',
+                            notes: 'Pinjaman usaha',
+                            status: 'belum lunas',
+                            createdAt: new Date().toISOString()
+                        }
+                    ];
+                    
+                    deposits = [
+                        {
+                            id: '1',
+                            date: new Date().toISOString().split('T')[0],
+                            accountName: 'Bank Mandiri',
+                            accountNumber: '1234567890',
+                            amount: 500000,
+                            notes: 'Setoran kas bulanan',
+                            createdAt: new Date().toISOString()
+                        }
+                    ];
+                    
+                    updateDashboardStats();
+                    renderRecentTransactions();
+                    renderTodayTransactions();
+                    renderDebtList();
+                    renderDepositList();
                 } else {
                     // User is signed out
                     loginContainer.style.display = 'flex';
